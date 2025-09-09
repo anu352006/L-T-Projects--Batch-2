@@ -1,0 +1,66 @@
+from machine import Pin, I2C
+import utime
+import time
+from i2c_lcd import I2cLcd
+
+# Pins
+TRIG = Pin(3, Pin.OUT)
+ECHO = Pin(2, Pin.IN)
+LED = Pin(15, Pin.OUT)
+
+# I2C setup
+i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=400000)
+devices = i2c.scan()
+print("I2C devices:", devices)
+
+if devices:
+    I2C_ADDR = devices[0]   # e.g. 39 = 0x27
+    lcd = I2cLcd(i2c, I2C_ADDR, 2, 16)
+    lcd.clear()
+    use_lcd = True
+else:
+    print("No LCD found")
+    use_lcd = False
+
+
+# Function to measure distance
+def measure_distance():
+    TRIG.low()
+    utime.sleep_us(2)
+    TRIG.high()
+    utime.sleep_us(10)
+    TRIG.low()
+
+    while ECHO.value() == 0:
+        start = utime.ticks_us()
+    while ECHO.value() == 1:
+        end = utime.ticks_us()
+
+    duration = utime.ticks_diff(end, start)
+    distance = (duration * 0.0343) / 2
+    return distance
+
+
+# Main loop
+while True:
+    dist = measure_distance()
+    print("Distance:", round(dist, 2), "cm")
+
+    if use_lcd:
+        lcd.clear()
+        lcd.move_to(0, 0)
+        lcd.putstr("Dist: {:.2f} cm".format(dist))
+
+        lcd.move_to(0, 1)
+        if dist < 20:
+            lcd.putstr("Object Detected")
+        else:
+            lcd.putstr("                ")  # clear 2nd line
+
+    if dist < 20:
+        LED.high()
+        print("⚠ Object Detected!")
+    else:
+        LED.low()
+
+    time.sleep(1)
