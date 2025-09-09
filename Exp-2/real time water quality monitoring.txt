@@ -1,0 +1,56 @@
+#include <Wire.h> 
+#include <Adafruit_GFX.h> 
+#include <Adafruit_SSD1306.h> 
+#include <OneWire.h> 
+#include <DallasTemperature.h> 
+#define SCREEN_WIDTH 128 
+#define SCREEN_HEIGHT 64 
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, 
+1); 
+#define ONE_WIRE_BUS 4   // GPIO4 
+OneWire oneWire(ONE_WIRE_BUS); 
+DallasTemperature sensors(&oneWire); 
+#define LED1 13  // GPIO13 
+#define LED2 15  // GPIO15 
+#define TURBIDITY_PIN A0 
+void setup() { 
+  Serial.begin(115200); 
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {  
+    Serial.println(F("SSD1306 allocation failed")); 
+    for (;;); 
+  } 
+  display.clearDisplay(); 
+  display.display(); 
+  sensors.begin(); 
+  pinMode(LED1, OUTPUT); 
+  pinMode(LED2, OUTPUT); 
+} 
+void loop() { 
+  int turbidityValue = analogRead(TURBIDITY_PIN); 
+  sensors.requestTemperatures(); 
+  float temperatureC = sensors.getTempCByIndex(0); 
+  if (turbidityValue > 600) { 
+    digitalWrite(LED1, HIGH); 
+    digitalWrite(LED2, LOW); 
+  } else { 
+    digitalWrite(LED1, LOW); 
+    digitalWrite(LED2, HIGH); 
+  } 
+  Serial.print("Turbidity: "); 
+  Serial.println(turbidityValue); 
+  Serial.print("Temperature: "); 
+  Serial.print(temperatureC); 
+  Serial.println(" *C"); 
+  display.clearDisplay(); 
+  display.setTextSize(1); 
+  display.setTextColor(SSD1306_WHITE); 
+  display.setCursor(0, 0); 
+  display.print("Turbidity: "); 
+  display.println(turbidityValue); 
+  display.setCursor(0, 16); 
+  display.print("Temp: "); 
+  display.print(temperatureC); 
+  display.println(" C"); 
+  display.display(); 
+  delay(1000); 
+}
