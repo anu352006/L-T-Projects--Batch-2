@@ -1,0 +1,63 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <MPU6050.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+MPU6050 mpu;
+
+#define BUZZER 23   // Buzzer pin (can change)
+
+void setup() {
+  Serial.begin(115200);
+
+  // OLED init
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("SSD1306 allocation failed");
+    for (;;);
+  }
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  // MPU6050 init
+  Wire.begin();
+  mpu.initialize();
+  if (!mpu.testConnection()) {
+    Serial.println("MPU6050 connection failed");
+    while (1);
+  }
+
+  pinMode(BUZZER, OUTPUT);
+}
+
+void loop() {
+  int16_t ax, ay, az;
+  int16_t gx, gy, gz;
+
+  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+
+  // Display on OLED
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.print("AX: "); display.println(ax);
+  display.print("AY: "); display.println(ay);
+  display.print("AZ: "); display.println(az);
+  display.print("GX: "); display.println(gx);
+  display.print("GY: "); display.println(gy);
+  display.print("GZ: "); display.println(gz);
+  display.display();
+
+  // Trigger buzzer if motion exceeds threshold
+  if (abs(ax) > 20000 || abs(ay) > 20000 || abs(az) > 20000) {
+    digitalWrite(BUZZER, HIGH);
+  } else {
+    digitalWrite(BUZZER, LOW);
+  }
+
+  delay(500);
+}
