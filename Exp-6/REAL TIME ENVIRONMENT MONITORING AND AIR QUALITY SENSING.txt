@@ -1,0 +1,51 @@
+from machine import Pin, ADC, I2C
+import ssd1306
+import time
+
+# MQ-135 Sensor setup (Analog input on GP26/ADC0)
+gas_sensor = ADC(Pin(26))
+
+# I2C setup for OLED (try I2C0 with SDA=GP0, SCL=GP1)
+i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=400000)
+
+# Scan I2C devices
+devices = i2c.scan()
+if not devices:
+    print("❌ No I2C device found. Check wiring (SDA/SCL).")
+    while True:
+        time.sleep(1)
+
+print("✅ I2C devices found:", [hex(d) for d in devices])
+
+# Use first detected device as OLED
+oled_addr = devices[0]
+oled = ssd1306.SSD1306_I2C(128, 64, i2c, addr=oled_addr)
+
+# Buzzer setup (GP15)
+buzzer = Pin(15, Pin.OUT)
+
+# Threshold for gas detection (adjust as per calibration)
+GAS_THRESHOLD = 28000  
+
+while True:
+    # Read gas sensor value (0 - 65535 in 16-bit scale)
+    gas_value = gas_sensor.read_u16()
+
+    # Clear display
+    oled.fill(0)
+    oled.text("Gas Detector", 0, 0)
+    oled.text("Value: {}".format(gas_value), 0, 20)
+
+    # Check gas level
+    if gas_value > GAS_THRESHOLD:
+        oled.text("ALERT!", 0, 40)
+        buzzer.value(1)  # Turn buzzer ON
+    else:
+        oled.text("Safe", 0, 40)
+        buzzer.value(0)  # Turn buzzer OFF
+
+    # Show on OLED
+    oled.show()
+
+    # Small delay
+    time.sleep(0.5)
