@@ -1,0 +1,43 @@
+#include <WiFi.h> 
+#include "DHT.h" 
+#define DHTPIN 4          // DHT data pin 
+#define DHTTYPE DHT11     // Change to DHT22 if you are using it 
+#define FIRE_SENSOR 5     // Fire sensor output pin 
+#define LED_PIN 2         // LED pin 
+#define BUZZER_PIN 18     // Buzzer pin 
+DHT dht(DHTPIN, DHTTYPE); 
+void setup() { 
+  Serial.begin(115200); 
+  pinMode(FIRE_SENSOR, INPUT); 
+  pinMode(LED_PIN, OUTPUT); 
+  pinMode(BUZZER_PIN, OUTPUT); 
+  dht.begin(); 
+  Serial.println("Fire Detection + DHT Sensor System Started"); 
+} 
+void loop() { 
+  // Read temperature & humidity 
+  float h = dht.readHumidity(); 
+  float t = dht.readTemperature(); 
+  // Check fire sensor 
+  int fireStatus = digitalRead(FIRE_SENSOR); 
+  if (t >= 29) {  
+    // Fire detected 
+    Serial.println(" FIRE DETECTED! Turning on Alarm "); 
+    digitalWrite(LED_PIN, HIGH); 
+    digitalWrite(BUZZER_PIN, HIGH); 
+  } else { 
+    // No fire 
+    digitalWrite(LED_PIN, LOW); 
+    digitalWrite(BUZZER_PIN, LOW); 
+  } 
+  if (!isnan(h) && !isnan(t)) { 
+    Serial.print("Humidity: "); 
+    Serial.print(h); 
+    Serial.print(" %  Temp: "); 
+    Serial.print(t); 
+    Serial.println(" °C"); 
+  } else { 
+    Serial.println(" Failed to read from DHT sensor!"); 
+  } 
+  delay(1000); // Update every second 
+}
